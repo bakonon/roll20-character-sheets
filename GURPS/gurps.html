@@ -842,7 +842,7 @@
 	                    Skills
 	                </div>
 	                <div class="sheet-cell sheet-col1">
-	                    <input type="text" name="attr_skill_points" value="0" />
+	                    <input type="text" name="attr_skill_points" disabled="disabled" value="@{skillpointstotal} + @{spellpointstotal} + @{techniquepointstotal}" />
 	                </div>
 	            </div> <!-- .sheet-row -->
 	            <div class="sheet-row sheet-row-other">
@@ -1357,6 +1357,7 @@
 					</div> <!-- .sheet-row -->
 				</fieldset> <!-- .repeating_skills -->
 			</div> <!-- .sheet-table -->
+            Total points: <span name="attr_skillpointstotal"></span>
 		</div> <!-- .sheet-box .sheet-skills -->
 
 
@@ -1417,7 +1418,83 @@
 					</div> <!-- .sheet-row -->
 				</fieldset> <!-- .repeating_skills -->
 			</div> <!-- .sheet-table -->
+			Total points: <span name="attr_techniquepointstotal"></span><br>
 		</div> <!-- .sheet-box .sheet-skills -->
+		
+		<!-- _____ _____ SPELLS BOX     _____ _____ -->
+        
+    	<div class="sheet-box sheet-spells">
+			<div class="sheet-table">
+				<div class="sheet-header">
+					<div class="sheet-cell sheet-col0">Spells</div>
+					<div class="sheet-cell sheet-col1">TL</div>
+					<div class="sheet-cell sheet-col2">Level</div>
+					<div class="sheet-cell sheet-col3">Attr</div>
+					<div class="sheet-cell sheet-col4">Diff</div>
+					<div class="sheet-cell sheet-col5">Bonus</div>
+					<div class="sheet-cell sheet-col6">Pts</div>
+					<div class="sheet-cell sheet-col7">Ref</div>
+				</div> <!-- .sheet-header -->
+				<fieldset class="repeating_spells">
+					<input class="sheet-toggle" type="checkbox" />
+					<span class="sheet-checkbox"></span>
+					<div class="sheet-row sheet-row-stats">
+						<div class="sheet-cell sheet-col0">
+							<input type="text" name="attr_name" />
+						</div>
+						<div class="sheet-cell sheet-col1">
+							<input type="text" name="attr_tl" />
+						</div>
+						<div class="sheet-cell sheet-col2">
+							<input type="number" name="attr_level" disabled="disabled" value="@{base} + @{difficulty} + @{bonus} + @{magerybonus} + (floor((@{points} * 0.25) + 2) * ceil( ( ( @{points} - 2 ) + abs( @{points} - 2) ) / 256 ) + @{points} * abs( ceil( ( ( @{points} - 2 ) + abs( @{points} - 2) ) / 256 ) - 1 ))"/>
+						</div>
+						<div class="sheet-cell sheet-col3">
+							<select name="attr_base">
+								<option value="@{intelligence}">IQ</option>
+                                <option value="@{strength}">ST</option>
+								<option value="@{dexterity}">DX</option>
+								<option value="@{health}">HT</option>
+								<option value="@{willpower}">Will</option>
+								<option value="@{perception}">Per</option>
+								<option value="10">10</option>
+							</select>
+						</div>
+						<div class="sheet-cell sheet-col4">
+							<select name="attr_difficulty">
+    							<option value="-3">H</option>
+								<option value="-4">VH</option>
+                                <option value="-1">E</option>
+								<option value="-2">A</option>
+							</select>
+						</div>
+						<div class="sheet-cell sheet-col5">
+							<input type="number" name="attr_bonus" value="0" />
+						</div>
+						<div class="sheet-cell sheet-col6">
+							<input type="number" name="attr_points" value="1" />
+						</div>
+						<div class="sheet-cell sheet-col7">
+							<input type="text" name="attr_ref" />
+						</div>
+						<div class="sheet-cell sheet-col8">
+		                    <button type="roll" value="@{roll} [[3d6]] @{VS} @{name} [[@{level} + @{modifier}]]" name="roll_vsSL" />
+		                </div>
+					</div> <!-- .sheet-row -->
+					<div class="sheet-row sheet-row-details">
+						<div class="sheet-cell sheet-col0 sheet-label">
+							Notes
+						</div>
+						<div class="sheet-cell sheet-col1">
+							<input type="text" name="attr_notes" />
+						</div>
+					</div> <!-- .sheet-row -->
+				</fieldset> <!-- .repeating_spells -->
+				
+			</div> <!-- .sheet-table -->
+            Total points: <span name="attr_spellpointstotal"></span><br>
+            Magery Bonus: <input type="number" name="attr_magerybonus" value="0" />
+		</div> <!-- .sheet-box .sheet-spells -->
+	
 	
 	</div> <!-- .sheet-tab3 -->
     
@@ -2104,3 +2181,130 @@
 </span>
 
 <br />
+
+<script type="text/worker">
+
+on("change:repeating_skills", function() {
+    updateSkillPoints();
+});
+
+on("remove:repeating_skills", function() {
+    updateSkillPoints();
+});
+
+function updateSkillPoints(){
+    var pointTotal =0;
+    getSectionIDs("repeating_skills", function(idarray) {
+      if(idarray.length > 0){
+          _.each(idarray, function(currentID, i) {
+             getAttrs(["repeating_skills_" + currentID + "_points", "repeating_skills_" + currentID + "_name"], function(values) {
+                //console.log(values);
+                //console.log(pointTotal)
+                if( isNaN(parseInt(values["repeating_skills_" + currentID + "_points"]))){
+                    pointTotal++;
+                }else{
+                    pointTotal = pointTotal + parseInt(values["repeating_skills_" + currentID + "_points"]);
+                }
+                //console.log(pointTotal)
+                if(i === idarray.length - 1) {
+                    setAttrs({
+                        skillpointstotal: pointTotal
+                    });
+                }
+            });
+        });
+      }
+   });
+}
+
+on("change:repeating_spells", function() {
+    updateSpellPoints();
+});
+
+on("remove:repeating_spells", function() {
+    updateSpellPoints();
+});
+
+function updateSpellPoints(){
+    var pointTotal =0;
+    getSectionIDs("repeating_spells", function(idarray) {
+      if(idarray.length > 0){
+          _.each(idarray, function(currentID, i) {
+             getAttrs(["repeating_spells_" + currentID + "_points", "repeating_spells_" + currentID + "_name"], function(values) {
+                //console.log(values);
+                //console.log(pointTotal)
+                if( isNaN(parseInt(values["repeating_spells_" + currentID + "_points"]))){
+                    pointTotal++;
+                }else{
+                    pointTotal = pointTotal + parseInt(values["repeating_spells_" + currentID + "_points"]);
+                }
+                //console.log(pointTotal)
+                if(i === idarray.length - 1) {
+                    setAttrs({
+                        spellpointstotal: pointTotal
+                    });
+                }
+            });
+        });
+      }
+   });
+}
+
+on("change:repeating_techniques", function() {
+    updateTechniquePoints();
+});
+
+on("remove:repeating_techniques", function() {
+    updateTechniquePoints();
+});
+
+function updateSpellPoints(){
+    var pointTotal =0;
+    getSectionIDs("repeating_techniques", function(idarray) {
+      if(idarray.length > 0){
+          _.each(idarray, function(currentID, i) {
+             getAttrs(["repeating_techniques_" + currentID + "_points", "repeating_techniques_" + currentID + "_name"], function(values) {
+                //console.log(values);
+                //console.log(pointTotal)
+                if( isNaN(parseInt(values["repeating_techniques_" + currentID + "_points"]))){
+                    pointTotal++;
+                }else{
+                    pointTotal = pointTotal + parseInt(values["repeating_techniquess_" + currentID + "_points"]);
+                }
+                //console.log(pointTotal)
+                if(i === idarray.length - 1) {
+                    setAttrs({
+                        techniquepointstotal: pointTotal
+                    });
+                }
+            });
+        });
+      }
+   });
+}
+
+on("sheet:opened" , function() {
+    getAttrs(["skillpointstotal", "spellpointstotal", "techniquepointstotal"], function(values){
+        if (isNaN(parseInt(values["skillpointstotal"]))){
+            setAttrs({
+                skillpointstotal: 0
+            })
+        }
+        if (isNaN(parseInt(values["spellpointstotal"]))){
+            setAttrs({
+                spellpointstotal: 0
+            })
+        }
+        if (isNaN(parseInt(values["techniquepointstotal"]))){
+            setAttrs({
+                techniquepointstotal: 0
+            })
+        }
+    });
+        
+
+// Do something the first time the sheet is opened by a player in a session
+
+});
+
+</script>
